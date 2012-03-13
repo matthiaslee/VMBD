@@ -1,0 +1,33 @@
+-----------------------------------------------------------
+Description:
+
+vmbd_chimney.py    Test script for online multiframe 
+                   blind deconvolution on chimney sequence
+olaGPU.py          Library for spatially-varying convolution
+		   incl. various deconvolution algorithms
+imagetools.py      Some image processing functions 
+gputools.py        Wrapping functions of Cuda code
+*.cu               Cuda code
+
+-----------------------------------------------------------
+Dependencies:
+
+This library requires PyCuda (tested with version 
+2011.1.2 and version 0.94.2) as well as the pyfft 
+package (tested with version 0.3.5). See Andreas 
+Kloeckner's project homepage
+    
+http://mathema.tician.de/software/pycuda
+    
+for details on PyCuda and its dependencies, as well as
+
+http://pypi.python.org/pypi/pyfft.
+
+for the installation guide of pyfft.
+
+-----------------------------------------------------------
+Contact:
+
+michael.hirsch@ucl.ac.uk
+
+Copyright (C) 2011 Michael Hirsch
