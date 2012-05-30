@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Script for performing spatially-varying online multi-frame
 # blind deconvolution
 #

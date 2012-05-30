@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Other libraries
 import pycuda.gpuarray as cua
 import pyfft.cuda as cufft

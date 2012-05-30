@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Needs to be fixed in chop_pad_GPU: if sx != csf * sw, artifacts arise
 # Example: lena with csf = (4,4)
 # in pad_cpu2gpu replace cua.zeros with cua.empty
