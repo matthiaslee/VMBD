@@ -28,7 +28,6 @@ cubin = compile(open('gputools.cu').read(), keep=True)
 edgetaper_code = open('edgetaper.cu').read()
 kernel_code = open('kernel.cu').read()
 resize_code = open('resize.cu').read()
-basis_code = open('basis.cu').read()
 projection_code = open('projection.cu').read()
 
 def _generate_preproc(dtype, shape=None):

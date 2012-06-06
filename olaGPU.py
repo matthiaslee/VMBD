@@ -7,7 +7,6 @@ import numpy as np
 
 # Own libraries
 import gputools
-import shock
 
 class OlaGPU:
     """
