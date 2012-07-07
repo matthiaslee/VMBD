@@ -287,7 +287,7 @@ class OlaGPU:
 
         # Compute FFT
         self.fft(y_gpu, self.fft_gpu.shape[0])
-        print self.fft_gpu.shape
+
         z_gpu = cua.empty_like(y_gpu)
 
         # Computing the inverse FFT
