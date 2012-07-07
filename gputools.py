@@ -884,6 +884,7 @@ def gradient_gpu(y_gpu, mode='valid'):
 def impad_gpu(y_gpu, sf):
 
   sf = np.array(sf)
+
   shape = (np.array(y_gpu.shape) + sf).astype(np.uint32)
   dtype = y_gpu.dtype
   block_size = (16,16,1)
