@@ -409,7 +409,6 @@ class OlaGPU:
                                  factr = 10., pgtol = 10e-15, \
                                  maxfun = maxfun, bounds = [(lb, ub)] * lf,\
                                  m = m, iprint = verbose)
-
             return np.reshape(zhat[0], sz), zhat[1], zhat[2]        
 
 

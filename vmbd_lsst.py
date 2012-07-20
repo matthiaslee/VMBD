@@ -24,11 +24,11 @@ import fitsTools
 # ----------------------------------------------------------------------------
 
 # Specify data path and file identifier
-DATAPATH = '/home/madmaze/DATA/LSST/lgPNG'
+DATAPATH = '/home/madmaze/DATA/LSST/ds9/gPNG'
 DATAPATH2 = '/home/madmaze/DATA/LSST/FITS'
-RESPATH  = '/home/madmaze/DATA/LSST/results2';
+RESPATH  = '/home/madmaze/DATA/LSST/results';
 BASE_N = 141
-FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.png' % (DATAPATH,(BASE_N+i))
+FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
 FILENAME2 = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH2,(BASE_N+i))
 ID       = 'LSST'
 
@@ -38,8 +38,8 @@ ID       = 'LSST'
 # General
 doshow   = 0                  # put 1 to show intermediate results
 backup   = 1                  # put 1 to write intermediate results to disk
-N        = 5                # how many frames to process
-N0       = 5                 # number of averaged frames for initialisation
+N        = 20 #100                # how many frames to process
+N0       = 10 #20                # number of averaged frames for initialisation
 
 # OlaGPU parameters
 sf      = np.array([20,20])   # estimated size of PSF
@@ -49,7 +49,7 @@ overlap = 0.5                 # overlab of neighboring patches in percent
 # Regularization parameters for kernel estimation
 f_alpha = 0.                 # promotes smoothness
 f_beta  = 0.1                  # Thikhonov regularization
-optiter = 200                 # number of iterations for minimization
+optiter = 50                 # number of iterations for minimization
 tol     = 1e-10               # tolerance for when to stop minimization
 # ============================================================================
 
@@ -62,11 +62,12 @@ tol     = 1e-10               # tolerance for when to stop minimization
 # ----------------------------------------------------------------------------
 if backup:
     # Create helper functions for file handling
-    yload2 = lambda i: 1. * pl.imread(FILENAME(i)).astype(np.float32)
+    # yload = lambda i: 1. * pl.imread(FILENAME(i)).astype(np.float32)
     xOffset=2000
     yOffset=0
     chunkSize=1000
-    yload = lambda i: 1. * fitsTools.readFITS(FILENAME2(i))[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
+    yload = lambda i: 1. * fitsTools.readFITS(FILENAME2(i))[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize].astype(np.float32)
+    
 
     # For backup purposes
     EXPPATH = '%s/%s_sf%dx%d_csf%dx%d_maxiter%d_alpha%.2f_beta%.2f' % \
@@ -123,16 +124,7 @@ for i in np.arange(1,N+1):
 
     # Load next observed image
     y = yload(i)
-    y2 = yload2(i)
     
-    print "Y", type(y)
-    print "Y2", type(y2)
-    
-    #!!! hack against NAN!!!
-    if y.min() == 0:
-    	    y+=.01
-    print "Y",y.min(),y.max()
-    print "Y2",y2.min(),y2.max()
     # Compute mask for determining saturated regions
     mask_gpu = 1. * cua.to_gpu(y < 1.)
     y_gpu    = cua.to_gpu(y)
@@ -146,6 +138,7 @@ for i in np.arange(1,N+1):
     # PSF estimation for given estimate of latent image and current observation
     f = X.deconv(y_gpu, mode = 'lbfgsb', alpha = f_alpha, beta = f_beta,
                  maxfun = optiter, verbose = 10)
+    #print "F: ",type(f),f
     fs = f[0]
 
     # Normalize PSF kernels to sum up to one
@@ -204,6 +197,3 @@ for i in np.arange(1,N+1):
 tf = t.clock()
 print('Time elapsed for total image sequence %.3f' % (tf-ti))
 # ----------------------------------------------------------------------------
-   
-    
-    
