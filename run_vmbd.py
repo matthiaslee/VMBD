@@ -11,7 +11,8 @@ import pycuda.gpuarray as cua
 import numpy as np
 import pylab as pl
 import os
-import optparse
+from shutil import rmtree 
+from optparse import OptionParser
 
 # Load own libraris
 import olaGPU 
@@ -19,72 +20,80 @@ import imagetools
 import gputools
 import fitsTools
 
-def process():
+def process(opts):
 	# ============================================================================
 	# Specify some parameter settings 
 	# ----------------------------------------------------------------------------
 	
 	# Specify data path and file identifier
-	DATAPATH = '/home/madmaze/DATA/LSST/ds9/gPNG'
-	DATAPATH2 = '/home/madmaze/DATA/LSST/FITS'
+	DATAPATH = '/home/madmaze/DATA/LSST/FITS'
 	RESPATH  = '/home/madmaze/DATA/LSST/results';
 	BASE_N = 141
-	FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
-	FILENAME2 = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH2,(BASE_N+i))
+	#FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
+	FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH,(BASE_N+i))
 	ID       = 'LSST'
 	
 	# ----------------------------------------------------------------------------
 	# Specify parameter settings
 	
 	# General
-	doshow   = 0                  # put 1 to show intermediate results
-	backup   = 1                  # put 1 to write intermediate results to disk
-	N        = 20 #100                # how many frames to process
-	N0       = 10 #20                # number of averaged frames for initialisation
+	doshow   = opts.doShow             # put 1 to show intermediate results
+	backup   = opts.backup                  # put 1 to write intermediate results to disk
+	N        = opts.N                # how many frames to process
+	N0       = opts.N0                # number of averaged frames for initialisation
 	
 	# OlaGPU parameters
 	sf      = np.array([20,20])   # estimated size of PSF
 	csf     = (3,3)               # number of kernels across x and y direction
-	overlap = 0.5                 # overlab of neighboring patches in percent
+	overlap = 0.5                 # overlap of neighboring patches in percent
 	
 	# Regularization parameters for kernel estimation
-	f_alpha = 0.                 # promotes smoothness
-	f_beta  = 0.1                  # Thikhonov regularization
-	optiter = 50                 # number of iterations for minimization
-	tol     = 1e-10               # tolerance for when to stop minimization
+	f_alpha = opts.f_alpha                 # promotes smoothness
+	f_beta  = opts.f_beta         # Thikhonov regularization
+	optiter = opts.optiter        # number of iterations for minimization
+	tol     = opts.tol        # tolerance for when to stop minimization
 	# ============================================================================
 	
+	# Create helper functions for file handling
 	
-	
-	# Hopefully no need to edit anything below
+	# # # HACK for chunking into available GPU mem # # #
+	#     - loads one 1kx1k block out of the fits image
+	xOffset=2000
+	yOffset=0
+	chunkSize=1000
+	yload = lambda i: 1. * fitsTools.readFITS(FILENAME(i))[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize].astype(np.float32)
 	
 	# ----------------------------------------------------------------------------
 	# Some more code for backuping the results
 	# ----------------------------------------------------------------------------
-	if backup:
-	    # Create helper functions for file handling
-	    # yload = lambda i: 1. * pl.imread(FILENAME(i)).astype(np.float32)
-	    xOffset=2000
-	    yOffset=0
-	    chunkSize=1000
-	    yload = lambda i: 1. * fitsTools.readFITS(FILENAME2(i))[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize].astype(np.float32)
-	    
+	# For backup purposes
+	EXPPATH = '%s/%s_sf%dx%d_csf%dx%d_maxiter%d_alpha%.2f_beta%.2f' % \
+	      (RESPATH,ID,sf[0],sf[1],csf[0],csf[1],optiter,f_alpha,f_beta)
+	      
+	xname = lambda i: '%s/x_%04d.png' % (EXPPATH,i)
+	yname = lambda i: '%s/y_%04d.png' % (EXPPATH,i)
+	fname = lambda i: '%s/f_%04d.png' % (EXPPATH,i)
 	
-	    # For backup purposes
-	    EXPPATH = '%s/%s_sf%dx%d_csf%dx%d_maxiter%d_alpha%.2f_beta%.2f' % \
-		      (RESPATH,ID,sf[0],sf[1],csf[0],csf[1],optiter,f_alpha,f_beta)
 	
-	    xname = lambda i: '%s/x_%04d.png' % (EXPPATH,i)
-	    yname = lambda i: '%s/y_%04d.png' % (EXPPATH,i)
-	    fname = lambda i: '%s/f_%04d.png' % (EXPPATH,i)
-	
-	    # Create results path if not existing
-	    try:
+	if os.path.exists(EXPPATH) and opts.overwrite:
+		try:
+			rmtree(EXPPATH)
+		except:
+			print "[ERROR] removing old results dir:",EXPPATH
+			exit()
+			
+	elif os.path.exists(EXPPATH):
+		print "[ERROR] results directory already exists, please remove or use '-o' to overwrite"
+		exit()
+		
+	# Create results path if not existing
+	try:
 		os.makedirs(EXPPATH)
-	    except:
-		pass
+	except:
+		print "[ERROR] creating results dir:",EXPPATH
+		exit()
 	
-	    print 'Results are saved to: \n %s \n' % EXPPATH
+	print 'Results are saved to: \n %s \n' % EXPPATH
 	
 	# ----------------------------------------------------------------------------
 	# For displaying intermediate results create target figure
@@ -163,7 +172,7 @@ def process():
 	    # ------------------------------------------------------------------------
 	    # For backup intermediate results
 	    # ------------------------------------------------------------------------
-	    if backup:
+	    if backup or i == N:
 		# Write intermediate results to disk incl. input
 		 imagetools.imwrite(y_gpu.get(), yname(i))
 	
@@ -179,6 +188,7 @@ def process():
 	    # ------------------------------------------------------------------------
 	    # For displaying intermediate results
 	    # ------------------------------------------------------------------------
+	    '''
 	    if np.mod(i,1) == 0 and doshow:
 		pl.figure(1)
 		pl.subplot(121)
@@ -194,16 +204,17 @@ def process():
 		imagetools.cellplot(fs, winaux.csf)
 		tf = t.clock()
 		print('Time elapsed after %d frames %.3f' % (i,(tf-ti)))
-	
+	    '''
 	tf = t.clock()
 	print('Time elapsed for total image sequence %.3f' % (tf-ti))
 	# ----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-	optparser = optparse.OptionParser()
+	optparser = OptionParser()
 	optparser.add_option("-s","--doShow", action="store_true", dest="doShow", default=False, help="show output at every timestep (Default: False)")
 	optparser.add_option("-b","--backup", action="store_true", dest="backup", default=False, help="write intermediate results to disk (Default: False)")
 	optparser.add_option("-l","--log", action="store_true", dest="log", default=False, help="write log to file (Default: False)")
+	optparser.add_option("-o","--overwrite", action="store_true", dest="overwrite", default=False, help="overwrite existing results (Default: False)")
 	optparser.add_option("-n","--nFrames", dest="N", default=100, type="int", help="Number of frames to process (Default: 100)")
 	optparser.add_option("-a","--nAveFrames", dest="N0", default=20, type="int", help="Number of frames averaged for initialization (Default: 20)")
 	optparser.add_option("--f_alpha", dest="f_alpha", default=0.0, type="float", help="promotes smoothness (Default: 0.0)")
@@ -213,6 +224,5 @@ if __name__ == "__main__":
 	
 	(opts,args) = optparser.parse_args()
 	
-	print "Set Parameters:", opts, args
-	
-	process(opts[:])
+	print "Set Parameters:", opts, args, "\n"
+	process(opts)
