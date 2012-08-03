@@ -9,7 +9,9 @@
 import pycuda.autoinit
 import pycuda.gpuarray as cua
 import numpy as np
-import pylab as pl
+# pylab is turned off because it takes forever to load
+#import pylab as pl
+#from pylab import draw, figure, bla bla bla
 import os
 from shutil import rmtree 
 from optparse import OptionParser
@@ -19,6 +21,7 @@ import olaGPU
 import imagetools
 import gputools
 import fitsTools
+import stopwatch
 
 def process(opts):
 	# ============================================================================
@@ -100,8 +103,9 @@ def process(opts):
 	# ----------------------------------------------------------------------------
 	# Create figure for displaying intermediate results
 	if doshow:
-	    pl.figure(1)
-	    pl.draw()
+	    print "showing intermediate results is currently disabled.."
+	    #pl.figure(1)
+	    #pl.draw()
 	
 	# ----------------------------------------------------------------------------
 	# Code for initialising the online multi-frame deconvolution
@@ -144,10 +148,11 @@ def process(opts):
 	    # ------------------------------------------------------------------------
 	    # Create OlaGPU instance with current estimate of latent image
 	    X = olaGPU.OlaGPU(x_gpu,sf,'valid',winaux=winaux)
-	
+	    t1 = stopwatch.timer()
 	    # PSF estimation for given estimate of latent image and current observation
 	    f = X.deconv(y_gpu, mode = 'lbfgsb', alpha = f_alpha, beta = f_beta,
 			 maxfun = optiter, verbose = 10)
+	    print "TIMER: ", t1.elapsed()
 	    #print "F: ",type(f),f
 	    fs = f[0]
 	
