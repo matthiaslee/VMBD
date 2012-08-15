@@ -43,7 +43,7 @@ def readFITS(fitsPath):
 	return numpy.array(raw_img_data, copy=True)
 	
 	#return new_img
-def asinhScale(data, nonlin, shift, minCut, maxCut, fname=""):
+def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", show=False):
 	output = numpy.array(data, copy=True)
 	
 	fact=numpy.arcsinh((maxCut-minCut)/nonlin)
@@ -65,6 +65,18 @@ def asinhScale(data, nonlin, shift, minCut, maxCut, fname=""):
 	#plt.show()
 	if fname != "":
 		imagetools.imwrite(output, fname+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+	if show is True:
+		rgbImg = numpy.zeros((output.shape[0], output.shape[1], 3), dtype=float)
+		#print output[lowCut].shape
+		print len(lowCut[0])
+		# make low end visible
+		#output[lowCut] = 1.0
+		rgbImg[lowCut[0],lowCut[1],2] = output[lowCut]
+		rgbImg[data_i[0],data_i[1],1] = output[data_i]
+		rgbImg[hiCut[0],hiCut[1],0] = output[hiCut]
+		pylab.clf()
+		pylab.imshow(rgbImg, aspect='equal')
+		pylab.savefig("rgbtest.png")
 	return output
 	
 def fitsWriteTest():
@@ -80,9 +92,14 @@ def fitsWriteTest():
 	y = yload(0)
 	
 	# current best seems 450/-50
-	for nonlin in range(0,500,50):
-		for shift in range(-50,50,10):
-			asinhScale(y, nonlin, shift, 0, y.max(),"out/test")
+	#for nonlin in range(0,500,50):
+	#	for shift in range(-50,50,10):
+	#		asinhScale(y, nonlin, shift, 0, y.max(),"out/test")
+	
+	nonlin = 450
+	shift=-50
+	#asinhScale(y, nonlin, shift, 0, y.max(),show=True)
+	asinhScale(y, nonlin, shift, 0, 40000,show=True)
 	
 	
 def makeHist(inarr,nbins,outfile):
