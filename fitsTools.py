@@ -43,7 +43,7 @@ def readFITS(fitsPath):
 	return numpy.array(raw_img_data, copy=True)
 	
 	#return new_img
-def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", show=False):
+def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", rgb=False):
 	output = numpy.array(data, copy=True)
 	
 	fact=numpy.arcsinh((maxCut-minCut)/nonlin)
@@ -65,18 +65,23 @@ def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", show=False):
 	#plt.show()
 	if fname != "":
 		imagetools.imwrite(output, fname+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
-	if show is True:
+	if rgb is True:
 		rgbImg = numpy.zeros((output.shape[0], output.shape[1], 3), dtype=float)
 		#print output[lowCut].shape
 		print len(lowCut[0])
 		# make low end visible
 		#output[lowCut] = 1.0
+		rgbImg[data_i[0],data_i[1],0] = output[data_i]
+		rgbImg[data_i[0],data_i[1],2] = output[data_i]
+		
 		rgbImg[lowCut[0],lowCut[1],2] = output[lowCut]
 		rgbImg[data_i[0],data_i[1],1] = output[data_i]
 		rgbImg[hiCut[0],hiCut[1],0] = output[hiCut]
 		pylab.clf()
 		pylab.imshow(rgbImg, aspect='equal')
 		pylab.savefig("rgbtest.png")
+		return rgbImg
+		
 	return output
 	
 def fitsWriteTest():
@@ -99,7 +104,7 @@ def fitsWriteTest():
 	nonlin = 450
 	shift=-50
 	#asinhScale(y, nonlin, shift, 0, y.max(),show=True)
-	asinhScale(y, nonlin, shift, 0, 40000,show=True)
+	asinhScale(y, nonlin, shift, 0, 40000, rgb=True)
 	
 	
 def makeHist(inarr,nbins,outfile):
