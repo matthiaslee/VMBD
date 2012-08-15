@@ -421,7 +421,7 @@ def power(inputArray, power_index=3.0, scale_min=None, scale_max=None):
 	return imageData
 
 
-def asinh(inputArray, scale_min=None, scale_max=None, non_linear=2.0):
+def asinh2(inputArray, scale_min=None, scale_max=None, non_linear=2.0):
 	"""Performs asinh scaling of the input numpy array.
 
 	@type inputArray: numpy array
@@ -444,10 +444,49 @@ def asinh(inputArray, scale_min=None, scale_max=None, non_linear=2.0):
 		scale_min = imageData.min()
 	if scale_max == None:
 		scale_max = imageData.max()
+	print "Min/Max",imageData.min(), imageData.max()
+	#factor = numpy.arcsinh((scale_max - scale_min)/non_linear)
+	#indices0 = numpy.where(imageData < scale_min)
+	#indices1 = numpy.where((imageData >= scale_min) & (imageData <= scale_max))
+	#indices2 = numpy.where(imageData > scale_max)
+	#imageData[indices0] = 0.0
+	#imageData[indices2] = 1.0
+	imageData = numpy.arcsinh((imageData - scale_min)/non_linear)#/factor
+
+	return imageData
+
+
+def asinh(inputArray, scale_min=None, scale_max=None, non_linear=2.0):
+	"""Performs asinh scaling of the input numpy array.
+
+	@type inputArray: numpy array
+	@param inputArray: image data array
+	@type scale_min: float
+	@param scale_min: minimum data value
+	@type scale_max: float
+	@param scale_max: maximum data value
+	@type non_linear: float
+	@param non_linear: non-linearity factor
+	@rtype: numpy array
+	@return: image data array
+	
+	"""		
+    
+	print "img_scale : asinh"
+	imageData=numpy.array(inputArray, copy=True)
+
+	if scale_min == None:
+		scale_min = imageData.min()
+	if scale_max == None:
+		scale_max = imageData.max()
 	factor = numpy.arcsinh((scale_max - scale_min)/non_linear)
 	indices0 = numpy.where(imageData < scale_min)
 	indices1 = numpy.where((imageData >= scale_min) & (imageData <= scale_max))
 	indices2 = numpy.where(imageData > scale_max)
+	#print "lower:",len(indices0[0]),len(indices0[1])
+	#print "higher:",len(indices2[0]),len(indices2[1])
+	#print "all:",len(indices1[0]),len(indices1[1])
+	#print imageData
 	imageData[indices0] = 0.0
 	imageData[indices2] = 1.0
 	imageData[indices1] = numpy.arcsinh((imageData[indices1] - scale_min)/non_linear)/factor

@@ -22,6 +22,7 @@ import imagetools
 import gputools
 import fitsTools
 import stopwatch
+import img_scale
 
 def process(opts):
 	# ============================================================================
@@ -47,7 +48,7 @@ def process(opts):
 	
 	# OlaGPU parameters
 	sf      = np.array([20,20])   # estimated size of PSF
-	csf     = (3,3)               # number of kernels across x and y direction
+	csf     =(3,3)               # number of kernels across x and y direction
 	overlap = 0.5                 # overlap of neighboring patches in percent
 	
 	# Regularization parameters for kernel estimation
@@ -131,13 +132,19 @@ def process(opts):
 	# ----------------------------------------------------------------------------
 	import time as t
 	ti = t.clock()
-	
+	t1 = stopwatch.timer()
+	t2 = stopwatch.timer()
+	t3 = stopwatch.timer()
+	t4 = stopwatch.timer()
+	t4.start()
 	for i in np.arange(1,N+1):
 	
 	    print 'Processing frame %d/%d \r' % (i,N)
 	
 	    # Load next observed image
+	    t3.start()
 	    y = yload(i)
+	    print "TIMER load:", t3.elapsed()
 	    
 	    # Compute mask for determining saturated regions
 	    mask_gpu = 1. * cua.to_gpu(y < 1.)
@@ -147,12 +154,15 @@ def process(opts):
 	    # PSF estimation
 	    # ------------------------------------------------------------------------
 	    # Create OlaGPU instance with current estimate of latent image
+	    t2.start()
 	    X = olaGPU.OlaGPU(x_gpu,sf,'valid',winaux=winaux)
-	    t1 = stopwatch.timer()
+	    print "TIMER GPU: ", t2.elapsed()
+	    
+	    t1.start()
 	    # PSF estimation for given estimate of latent image and current observation
 	    f = X.deconv(y_gpu, mode = 'lbfgsb', alpha = f_alpha, beta = f_beta,
 			 maxfun = optiter, verbose = 10)
-	    print "TIMER: ", t1.elapsed()
+	    print "TIMER Optimization: ", t1.elapsed()
 	    #print "F: ",type(f),f
 	    fs = f[0]
 	
@@ -163,6 +173,7 @@ def process(opts):
 	    # Latent image estimation
 	    # ------------------------------------------------------------------------
 	    # Create OlaGPU instance with estimated PSF
+	    t2.start()
 	    F = olaGPU.OlaGPU(fs,sx,'valid',winaux=winaux)
 	
 	    # Latent image estimation by performing one gradient descent step
@@ -171,24 +182,27 @@ def process(opts):
 	    gputools.cliplower_GPU(factor_gpu, tol)
 	    x_gpu = x_gpu * factor_gpu
 	    x_max = x_gpu.get()[sf[0]:-sf[0],sf[1]:-sf[1]].max()
+	    
 	    gputools.clipupper_GPU(x_gpu, x_max)
-	
+	    print "TIMER GPU: ", t2.elapsed()
 	    
 	    # ------------------------------------------------------------------------
 	    # For backup intermediate results
 	    # ------------------------------------------------------------------------
 	    if backup or i == N:
-		# Write intermediate results to disk incl. input
-		 imagetools.imwrite(y_gpu.get(), yname(i))
-	
-		 # Crop image to input size
-		 xi = x_gpu.get()[sf2[0]:-sf2[0],sf2[1]:-sf2[1]] / x_max
-		 imagetools.imwrite(xi, xname(i))
-	
-		 # Concatenate PSF kernels for ease of visualisation
-		 f = imagetools.gridF(fs,csf)
-		 imagetools.imwrite(f/f.max(), fname(i))
-	
+	    	# Write intermediate results to disk incl. input
+	    	new_img = img_scale.asinh(y_gpu.get(), scale_min=0.0,non_linear=300)
+		imagetools.imwrite(new_img, yname(i))
+		
+		# Crop image to input size
+		xi = x_gpu.get()[sf2[0]:-sf2[0],sf2[1]:-sf2[1]] / x_max
+		new_img = img_scale.asinh(xi, scale_min=0.0, non_linear=500)
+		imagetools.imwrite(new_img, xname(i))
+		
+		
+		# Concatenate PSF kernels for ease of visualisation
+		f = imagetools.gridF(fs,csf)
+		imagetools.imwrite(f/f.max(), fname(i))
 	
 	    # ------------------------------------------------------------------------
 	    # For displaying intermediate results
@@ -213,6 +227,12 @@ def process(opts):
 	tf = t.clock()
 	print('Time elapsed for total image sequence %.3f' % (tf-ti))
 	# ----------------------------------------------------------------------------
+	print "TOTAL: %.3f" % (t4.elapsed())
+	print "OptimizeCPUtime %.3f %.3f" % (t1.getTotal(), 100*(t1.getTotal()/t4.getTotal()))
+	print "GPUtime %.3f %.3f" % (t2.getTotal(), 100*(t2.getTotal()/t4.getTotal()))
+	print "LoadTime %.3f %.3f" % (t3.getTotal(), 100*(t3.getTotal()/t4.getTotal()))
+	
+	
 
 if __name__ == "__main__":
 	optparser = OptionParser()
