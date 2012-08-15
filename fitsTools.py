@@ -79,15 +79,16 @@ def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", rgb=False):
 		rgbImg[hiCut[0],hiCut[1],0] = output[hiCut]
 		
 		if fname != "":
-			pylab.clf()
-			pylab.imshow(rgbImg, aspect='equal')
-			pylab.savefig(fname+"-RGB-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+			#pylab.clf()
+			#pylab.imshow(rgbImg, aspect='equal')
+			#pylab.savefig(fname+"-RGB-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+			imagetools.imwrite(rgbImg, fname+"_RGB_"+(str(nonlin)+'_'+str(shift)+'_'+str(minCut)+'_'+str(maxCut))+".png")
 		
 		return rgbImg
 	else:
 		# Write out image
 		if fname != "":
-			imagetools.imwrite(output, fname+"-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+			imagetools.imwrite(output, fname+"_"+(str(nonlin)+'_'+str(shift)+'_'+str(minCut)+'_'+str(maxCut))+".png")
 		
 		return output
 	
@@ -110,7 +111,7 @@ def fitsWriteTest():
 	nonlin = 450
 	shift=-50
 	#asinhScale(y, nonlin, shift, 0, y.max(),show=True)
-	asinhScale(y, nonlin, shift, 0, 40000, rgb=True)
+	asinhScale(y, nonlin, shift, 0, 40000, fname="test", rgb=True)
 	
 	
 def makeHist(inarr,nbins,outfile):
