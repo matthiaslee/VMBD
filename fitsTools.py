@@ -56,39 +56,45 @@ def asinhScale(data, nonlin, shift, minCut, maxCut, fname="", rgb=False):
 	data_i = numpy.where((output > minCut) & (output < maxCut))
 	hiCut = numpy.where(output > maxCut)
 	
+	# Zero out low end to avoid negatives
 	output[lowCut] = 0.0
+	# perform asinh and scaling to 0.0-1.0
 	output[data_i] = numpy.arcsinh(((output[data_i])/nonlin))/fact
+	# Cut off high end
 	output[hiCut] = 1.0
-	
-	#plt.plot(dat.flatten(),output.flatten(),label=(str(nonlin)+'/'+str(shift)+'/'+str(minCut)+'/'+str(maxCut)))
-	#plt.legend(loc=4)
-	#plt.show()
-	if fname != "":
-		imagetools.imwrite(output, fname+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+		
 	if rgb is True:
 		rgbImg = numpy.zeros((output.shape[0], output.shape[1], 3), dtype=float)
-		#print output[lowCut].shape
-		print len(lowCut[0])
-		# make low end visible
-		#output[lowCut] = 1.0
+		
+		# Make RGB gray scale
 		rgbImg[data_i[0],data_i[1],0] = output[data_i]
+		rgbImg[data_i[0],data_i[1],1] = output[data_i]
 		rgbImg[data_i[0],data_i[1],2] = output[data_i]
 		
+		# Add in lows in Blue and highs in Red
+		# lows are set to 0.0 and therefore wont show up.
+		# to make low end visible uncomment:
+		#output[lowCut] = 1.0
 		rgbImg[lowCut[0],lowCut[1],2] = output[lowCut]
-		rgbImg[data_i[0],data_i[1],1] = output[data_i]
 		rgbImg[hiCut[0],hiCut[1],0] = output[hiCut]
-		pylab.clf()
-		pylab.imshow(rgbImg, aspect='equal')
-		pylab.savefig("rgbtest.png")
-		return rgbImg
 		
-	return output
+		if fname != "":
+			pylab.clf()
+			pylab.imshow(rgbImg, aspect='equal')
+			pylab.savefig(fname+"-RGB-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+		
+		return rgbImg
+	else:
+		# Write out image
+		if fname != "":
+			imagetools.imwrite(output, fname+"-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
+		
+		return output
 	
 def fitsWriteTest():
 	DATAPATH = '/home/madmaze/DATA/LSST/FITS'
 	RESPATH  = '/home/madmaze/DATA/LSST/results';
 	BASE_N = 141
-	#FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
 	FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH,(BASE_N+i))
 	xOffset=2000
 	yOffset=0
