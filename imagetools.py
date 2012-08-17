@@ -303,9 +303,11 @@ def imwrite(x, filename):
 
     Copyright (C) 2010 Michael Hirsch
     """    
-    if not x.dtype == 'uint8':
-        x *= 255.
-    imx = Image.fromarray(np.uint8(x))
+    # lets not muck around with the original
+    t_x = x.copy()
+    if not t_x.dtype == 'uint8':
+        t_x *= 255.
+    imx = Image.fromarray(np.uint8(t_x))
     imx.save(filename)
     
 
