@@ -883,28 +883,28 @@ def gradient_gpu(y_gpu, mode='valid'):
 
 def impad_gpu(y_gpu, sf):
 
-  sf = np.array(sf)
-  shape = (np.array(y_gpu.shape) + sf).astype(np.uint32)
-  dtype = y_gpu.dtype
-  block_size = (16,16,1)
-  grid_size = (int(np.ceil(float(shape[1])/block_size[0])),
+    sf = np.array(sf)
+    shape = (np.array(y_gpu.shape) + sf).astype(np.uint32)
+    dtype = y_gpu.dtype
+    block_size = (16,16,1)
+    grid_size = (int(np.ceil(float(shape[1])/block_size[0])),
                int(np.ceil(float(shape[0])/block_size[1])))
 
-  preproc = _generate_preproc(dtype, shape)
-  mod = SourceModule(preproc + kernel_code, keep=True)
+    preproc = _generate_preproc(dtype, shape)
+    mod = SourceModule(preproc + kernel_code, keep=True)
 
-  padded_gpu = cua.empty((int(shape[0]), int(shape[1])), dtype)
-  impad_fun = mod.get_function("impad")
+    padded_gpu = cua.empty((int(shape[0]), int(shape[1])), dtype)
+    impad_fun = mod.get_function("impad")
 
-  upper_left = np.uint32(np.floor(sf / 2.))
-  original_size = np.uint32(np.array(y_gpu.shape))
+    upper_left = np.uint32(np.floor(sf / 2.))
+    original_size = np.uint32(np.array(y_gpu.shape))
 
-  impad_fun(padded_gpu.gpudata, y_gpu.gpudata,
+    impad_fun(padded_gpu.gpudata, y_gpu.gpudata,
             upper_left[1], upper_left[0],
             original_size[0], original_size[1],
             block=block_size, grid=grid_size)
 
-  return padded_gpu
+    return padded_gpu
 
 
 def laplace_gpu(y_gpu, mode='valid'):
