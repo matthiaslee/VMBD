@@ -65,7 +65,7 @@ def process(opts):
     xOffset=2000
     yOffset=0
     chunkSize=1000
-    yload = lambda i: 1. * fitsTools.readFITS(FILENAME(i))[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
+    yload = lambda i: 1. * fitsTools.readFITS(FILENAME(i), norm=True)[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
     
     # ----------------------------------------------------------------------------
     # Some more code for backuping the results
@@ -190,29 +190,30 @@ def process(opts):
         # ------------------------------------------------------------------------
         if backup or i == N:
             # Write intermediate results to disk incl. input
-            y_img = y_gpu.get()
+            y_img = y_gpu.get()*1e5
             #print "y",y_img.max(), type(y)
             #print y_img.shape
             #print y_img
-            fitsTools.fitsStats(y_img)
-            fitsTools.asinhScale(y_img, 450, 0, minCut=0.0, maxCut=y_img.max(),fname=yname(i))
-        #imagetools.imwrite(y_img, yname(i))
+            #fitsTools.fitsStats(y_img)
+            fitsTools.asinhScale(y_img, 450, -50, minCut=0.0, maxCut=40000, fname=yname(i))
+            #imagetools.imwrite(y_img, yname(i))
+            
+            # Crop image to input size
+            xi = (x_gpu.get()[sf2[0]:-sf2[0],sf2[1]:-sf2[1]] / x_max)*1e5
+            #print "xi",  xi.min(), xi.max(), type(xi)
+            #print xi.shape
+            #print xi
+            fitsTools.fitsStats(xi)
+            fitsTools.asinhScale(xi, 450, -50, minCut=0.0, maxCut=40000, fname=xname(i))
+            #imagetools.imwrite(xi, xname(i))
         
-        # Crop image to input size
-        xi = x_gpu.get()[sf2[0]:-sf2[0],sf2[1]:-sf2[1]] / x_max
-        #print "xi",  xi.min(), xi.max(), type(xi)
-        #print xi.shape
-        #print xi
-        fitsTools.fitsStats(xi)
-        #fitsTools.asinhScale(xi, 1, 0, minCut=0.0, fname="testX")
-        imagetools.imwrite(xi, xname(i))
-        
-        
-        # Concatenate PSF kernels for ease of visualisation
-        f = imagetools.gridF(fs,csf)
-
-        imagetools.imwrite(f/f.max(), fname(i))
-        #exit()
+            # Concatenate PSF kernels for ease of visualisation
+            f = imagetools.gridF(fs,csf)
+            f = f*1e5
+            
+            fitsTools.asinhScale(f, 450, -50, minCut=0.0, maxCut=40000, fname=fname(i))
+            #imagetools.imwrite(f/f.max(), fname(i))
+            #exit()
     
         # ------------------------------------------------------------------------
         # For displaying intermediate results
