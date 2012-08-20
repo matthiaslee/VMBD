@@ -65,7 +65,7 @@ def process(opts):
     xOffset=2000
     yOffset=0
     chunkSize=1000
-    yload = lambda i: 1. * fitsTools.readFITS(FILENAME(i), norm=True)[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
+    yload = lambda i: 1. * fitsTools.readFITS(FILENAME(i), use_mask=True, norm=True)[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
     
     # ----------------------------------------------------------------------------
     # Some more code for backuping the results

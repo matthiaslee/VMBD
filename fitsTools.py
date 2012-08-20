@@ -9,20 +9,29 @@ import img_scale
 import stopwatch
 import imagetools
 
-def readFITS(fitsPath, norm=False):
+def readFITS(fitsPath, use_mask=False, norm=False):
     t1 = stopwatch.timer()
     
     t1.start()
     print "loading %s..." % fitsPath
     hdulist = pyfits.open(fitsPath)
     print "load:",t1.elapsed()
-    n=0
-    data=[]
 
     t1.start()
-    # get first element
+    
+    # get image data
     raw_img_data = hdulist[1].data
-    # TODO: should we be using the mask here to avoid noise?
+    
+    if use_mask:
+        # get and apply mask
+        img_mask = hdulist[2].data
+        
+        print "img_mask:"
+        fitsStats(img_mask)
+        
+        maskIdx = numpy.where(img_mask < 5)
+        raw_img_data[maskIdx] = 0.0
+    
     hdulist.close()
     
     #width=raw_img_data.shape[0]
@@ -138,9 +147,9 @@ def fitsRGBtest():
     nonlin = 450
     shift=-50
     #asinhScale(y, nonlin, shift, 0, y.max(),show=True)
-    img = asinhScale(y, nonlin, shift, minCut=0, maxCut=40000, fname="test_new")
+    img = asinhScale(y, nonlin, shift, minCut=0, maxCut=40000, fname="test_orig")
     fitsStats(img)
-    imagetools.imwrite(img, "test_img.png")
+    #imagetools.imwrite(img, "test_img.png")
 
 def scaleTest():
     # loads a fits file and then immediately does an asinh scale and saves an RGB .PNG
@@ -161,9 +170,32 @@ def scaleTest():
     shift=-50
     y=y*1e5
     #asinhScale(y, nonlin, shift, 0, y.max(),show=True)
-    img = asinhScale(y, nonlin, shift, minCut=0,maxCut=40000, fname="test_new_scaled", rgb=False)
+    img = asinhScale(y, nonlin, shift, minCut=0,maxCut=40000, fname="test_scaled", rgb=False)
     fitsStats(img)
-    imagetools.imwrite(img, "test_img_Scaled.png")
+    #imagetools.imwrite(img, "test_img_Scaled.png")
+
+def maskTest():
+    # loads a fits file and then immediately does an asinh scale and saves an RGB .PNG
+    DATAPATH = '/home/madmaze/DATA/LSST/FITS'
+    RESPATH  = '/home/madmaze/DATA/LSST/results';
+    BASE_N = 141
+    FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH,(BASE_N+i))
+    xOffset=2000
+    yOffset=0
+    chunkSize=1000
+    yload = lambda i: 1. * readFITS(FILENAME(i), use_mask=True, norm=True)[yOffset:yOffset+chunkSize,xOffset:xOffset+chunkSize]
+    y = yload(0)
+    print y.max()
+    
+    fitsStats(y)
+    #asinhScale(y, nonlin, shift, minCut=0, maxCut=40000, fname="test_new", rgb=True)
+    nonlin = 450
+    shift=-50
+    y=y*1e5
+    #asinhScale(y, nonlin, shift, 0, y.max(),show=True)
+    img = asinhScale(y, nonlin, shift, minCut=0,maxCut=40000, fname="test_scaled_masked", rgb=False)
+    fitsStats(img)
+    #imagetools.imwrite(img, "test_img_Scaled.png")
     
 def makeHist(inarr,nbins,outfile):
     bins=[]
@@ -197,5 +229,6 @@ def fitsStats(X):
     print "-/+:",len(numpy.where(X < 0)[0]),len(numpy.where(X > 0)[0])
 
 if __name__ == "__main__":
-    fitsRGBtest()
+    #fitsRGBtest()
     scaleTest()
+    maskTest()
