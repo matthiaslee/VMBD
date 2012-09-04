@@ -30,8 +30,8 @@ def process(opts):
     # ----------------------------------------------------------------------------
     
     # Specify data path and file identifier
-    DATAPATH = '/home/madmaze/DATA/LSST/FITS'
-    RESPATH  = '/home/madmaze/DATA/LSST/results';
+    DATAPATH = '/DATA/LSST/FITS'
+    RESPATH  = '../../../DATA/results';
     BASE_N = 141
     #FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
     FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH,(BASE_N+i))

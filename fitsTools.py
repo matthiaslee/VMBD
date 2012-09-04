@@ -225,6 +225,7 @@ def makeHist(inarr,nbins,outfile):
     f.close()
     
 def fitsStats(X):
+    # this can be commented out for greater speed..
     print "IM stats (min/max/ave/median):", X.min(), X.max(), numpy.mean(X), numpy.median(X)
     print "-/+:",len(numpy.where(X < 0)[0]),len(numpy.where(X > 0)[0])
 
