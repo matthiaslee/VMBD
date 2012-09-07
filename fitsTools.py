@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 import pyfits
-#import os
-#import types
-#import pylab
 import numpy
-#import img_scale
+
 import stopwatch
 import imagetools
 
@@ -73,7 +70,6 @@ def asinhScale(data, nonlin, shift, minCut=None, maxCut=None, fname="", rgb=Fals
     
     fact=numpy.arcsinh((maxCut-minCut)/nonlin)
     print "factor:",fact
-    
     
     output = output + shift
     
@@ -194,7 +190,8 @@ def maskTest():
     img = asinhScale(y, nonlin, shift, minCut=0,maxCut=40000, fname="test_scaled_masked", rgb=False)
     fitsStats(img)
     #imagetools.imwrite(img, "test_img_Scaled.png")
-    
+
+# making a histogram, deprecated.    
 def makeHist(inarr,nbins,outfile):
     bins=[]
     bins2=[]
