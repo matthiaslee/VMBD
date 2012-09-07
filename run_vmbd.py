@@ -33,7 +33,6 @@ def process(opts):
     DATAPATH = '/DATA/LSST/FITS'
     RESPATH  = '../../../DATA/results';
     BASE_N = 141
-    #FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits.png' % (DATAPATH,(BASE_N+i))
     FILENAME = lambda i: '%s/v88827%03d-fz.R22.S11.fits' % (DATAPATH,(BASE_N+i))
     ID       = 'LSST'
     
@@ -162,7 +161,7 @@ def process(opts):
         f = X.deconv(y_gpu, mode = 'lbfgsb', alpha = f_alpha, beta = f_beta,
              maxfun = optiter, verbose = 10)
         print "TIMER Optimization: ", t1.elapsed()
-        #print "F: ",type(f),f
+
         fs = f[0]
     
         # Normalize PSF kernels to sum up to one
@@ -191,29 +190,20 @@ def process(opts):
         if backup or i == N:
             # Write intermediate results to disk incl. input
             y_img = y_gpu.get()*1e5
-            #print "y",y_img.max(), type(y)
-            #print y_img.shape
-            #print y_img
-            #fitsTools.fitsStats(y_img)
             fitsTools.asinhScale(y_img, 450, -50, minCut=0.0, maxCut=40000, fname=yname(i))
-            #imagetools.imwrite(y_img, yname(i))
             
             # Crop image to input size
             xi = (x_gpu.get()[sf2[0]:-sf2[0],sf2[1]:-sf2[1]] / x_max)*1e5
-            #print "xi",  xi.min(), xi.max(), type(xi)
-            #print xi.shape
-            #print xi
+
             fitsTools.fitsStats(xi)
             fitsTools.asinhScale(xi, 450, -50, minCut=0.0, maxCut=40000, fname=xname(i))
-            #imagetools.imwrite(xi, xname(i))
         
             # Concatenate PSF kernels for ease of visualisation
             f = imagetools.gridF(fs,csf)
             f = f*1e5
             
             fitsTools.asinhScale(f, 450, -50, minCut=0.0, maxCut=40000, fname=fname(i))
-            #imagetools.imwrite(f/f.max(), fname(i))
-            #exit()
+
     
         # ------------------------------------------------------------------------
         # For displaying intermediate results

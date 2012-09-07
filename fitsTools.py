@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import pyfits
-import os
-import types
-import pylab
+#import os
+#import types
+#import pylab
 import numpy
-import img_scale
+#import img_scale
 import stopwatch
 import imagetools
 
@@ -26,16 +26,15 @@ def readFITS(fitsPath, use_mask=False, norm=False):
         # get and apply mask
         img_mask = hdulist[2].data
         
-        print "img_mask:"
+        print "using img_mask"
         fitsStats(img_mask)
         
+        # where ever the mask is "black" make the input image black aswell
+        # after poking around the fits files, it looks like the "black" threshold is around 5
         maskIdx = numpy.where(img_mask < 5)
         raw_img_data[maskIdx] = 0.0
     
     hdulist.close()
-    
-    #width=raw_img_data.shape[0]
-    #height=raw_img_data.shape[1]
     
     # cast into float
     raw_img_data = numpy.array(raw_img_data, dtype=numpy.float32)
@@ -47,19 +46,19 @@ def readFITS(fitsPath, use_mask=False, norm=False):
     if norm:
         raw_img_data = raw_img_data/1e5
     
-    #maxy = numpy.where(raw_img_data == raw_img_data.max())
-    #print raw_img_data.max(), maxy
-    #raw_img_data = raw_img_data/raw_img_data.max()
-    
-    #print raw_img_data.max(), raw_img_data[maxy]
-    
-    #new_img = img_scale.sqrt(img_data, scale_min=-1.0)
-    #new_img = raw_img_data/raw_img_data.max()#asinhScale(raw_img_data, 450, -50, minCut=0.0)
-    #print "IM stats (min/max/ave/median):", raw_img_data.min(), raw_img_data.max(), numpy.mean(raw_img_data), numpy.median(raw_img_data)
-    #print "-/+:",len(numpy.where(raw_img_data > 0)[0]),len(numpy.where(raw_img_data < 0)[0])
     return raw_img_data.copy()
     
-    #return new_img
+###########################################################
+# asinhScale() 
+#    scales the input image via asinh
+#    if fname is defined it will save the output image
+#    if rgb=True it will create an RGB image with
+#        values>maxCut are red
+#        values<minCut are blue
+#        minCut<values>maxcut white
+#    if fscale=True then the image will be scaled between 0-1
+#
+###########################################################
 def asinhScale(data, nonlin, shift, minCut=None, maxCut=None, fname="", rgb=False, fscale=True):
     print "Enter asinhScale.............................."
     minX=data.min()
@@ -109,11 +108,10 @@ def asinhScale(data, nonlin, shift, minCut=None, maxCut=None, fname="", rgb=Fals
         rgbImg[lowCut[0],lowCut[1],2] = output[lowCut]
         rgbImg[hiCut[0],hiCut[1],0] = output[hiCut]
         
+        # Write out image
         if fname != "":
-            #pylab.clf()
-            #pylab.imshow(rgbImg, aspect='equal')
-            #pylab.savefig(fname+"-RGB-"+(str(nonlin)+'-'+str(shift)+'-'+str(minCut)+'-'+str(maxCut))+".png")
             imagetools.imwrite(rgbImg, fname+"_RGB_"+(str(nonlin)+'_'+str(shift)+'_'+str(minCut)+'_'+str(maxCut))+".png")
+            
         print "Leaving asinhScale.........................RGB"
         return numpy.array(rgbImg, copy=True)
     else:
