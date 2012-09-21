@@ -63,7 +63,7 @@ def setupResultDir(dirname, overwrite):
 
 def printGpuMemStats():
     (free,total)=cuda.mem_get_info()
-    print("global mem:%f%% free"%(free*100/total))
+    print("global mem: %2.2f%% / %.2fMB/%.2fMB free"%(free*100/total,free/(1024**2),total/(1024**2)))
     
 def process(opts):
     
