@@ -59,11 +59,11 @@ def setupResultDir(dirname, overwrite):
         print "[ERROR] creating results dir:",dirname
         exit()
     
-    print 'Results are saved to: \n %s \n' % dirname
+    print 'Results Dir: \n %s \n' % dirname
 
 def printGpuMemStats():
     (free,total)=cuda.mem_get_info()
-    print("global mem: %2.2f%% / %.2fMB/%.2fMB free"%(free*100/total,free/(1024**2),total/(1024**2)))
+    print("\tGlobal mem: %2.2f%% / %.2fMB/%.2fMB free"%(free*100/total,free/(1024**2),total/(1024**2)))
     
 def process(opts):
     
@@ -108,6 +108,70 @@ def process(opts):
     
     # print debug stats
     printGpuMemStats()
+    
+    #------------------------------------------------------
+    # Loop over all frames and do online blind deconvolution
+    for i in np.arange(1, opts.N+1):
+        print "\nProcessing frame %d/%d------------------------" % (i,opts.N)
+        printGpuMemStats()
+        
+        # Load next observed image
+        y = loadFits(FNAME(i))
+        
+        # Compute mask for determining saturated regions
+        #     - no necessary, all values < 1
+        mask_gpu = 1. * cua.to_gpu(y < 1.)
+        
+        # Load onto GPU
+        y_gpu = cua.to_gpu(y)
+        
+        #--------------------------------------------------
+        # PSF estimation
+        
+        # Creat OlaGPU instance with current estimate of latent image
+        X = olaGPU.OlaGPU(x_gpu, psfSize, 'valid', winaux=winaux)
+        
+        # PSF estimation for given estimate of latent image and current observation
+        print "\trunning PSF estimation with lbfgsb minimization.."
+        # fortran lbfgsb
+        #psfEst = X.deconv(y_gpu, mode = 'lbfgsb', alpha = opts.f_alpha, beta = opts.f_beta,
+        #     maxfun = opts.optiter, verbose = -1)
+        # Note: change verbose=0 for basic out put and verbose=10 for output every 10th itr
+        
+        # gdirect
+        psfEst = X.deconv(y_gpu, mode = 'gdirect', alpha = opts.f_alpha, beta = opts.f_beta,
+             maxfun = opts.optiter, verbose = -1)
+        
+        # Normalize PSF kernels to sum up to one
+        #    - implement on GPU to avoid copy back
+        # lbfgsb
+        #fs = gputools.normalize(psfEst.[0])
+        # gdirect
+        fs = gputools.normalize(psfEst.get())
+
+        # ------------------------------------------------------------------------
+        # Latent image estimation
+        # ------------------------------------------------------------------------
+        # Create OlaGPU instance with estimated PSF
+        F = olaGPU.OlaGPU(fs, x_shape, 'valid', winaux=winaux)
+        
+        # Latent image estimation by performing one gradient descent step
+        # multiplicative update is used which preserves positivity 
+        factor_gpu = F.cnvtp(mask_gpu*y_gpu)/(F.cnvtp(mask_gpu*F.cnv(x_gpu))+opts.tol)
+        gputools.cliplower_GPU(factor_gpu, opts.tol)
+        x_gpu = x_gpu * factor_gpu
+        x_max = x_gpu.get()[psfSize[0]:-psfSize[0],psfSize[1]:-psfSize[1]].max()
+        
+        gputools.clipupper_GPU(x_gpu, x_max)
+        
+        # Manually dealloc mask and y
+        del mask_gpu
+        del y_gpu
+        del X
+        del psfEst
+        del fs
+        #del F
+        
     
     
     
